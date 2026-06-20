@@ -1,0 +1,240 @@
+html<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civil Engineering Eco-Calculator</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --secondary: #37474f;
+            --background: #f5f5f5;
+            --card: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--secondary);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        select:focus, input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        button {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1b5e20;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-left: 6px solid var(--primary);
+            border-radius: 4px;
+            display: none;
+        }
+        .results h2 {
+            margin-top: 0;
+            color: #1b5e20;
+        }
+        .result-item {
+            margin: 12px 0;
+            font-size: 17px;
+        }
+        .sources {
+            margin-top: 40px;
+            font-size: 13px;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏗️ Civil Engineering Eco-Calculator</h1>
+    <div class="subtitle">An educational tool for students to explore low-carbon structural alternatives.</div>
+
+    <!-- Material Type Selection -->
+    <div class="form-group">
+        <label for="material">Select Material Type:</label>
+        <select id="material">
+            <option value="standard">Standard Concrete (Baseline: C30/37 or 4000 psi, 100% Portland Cement)</option>
+            <option value="low_carbon">Low-Carbon Concrete (40% Fly Ash / Slag replacement)</option>
+            <option value="recycled">Recycled Aggregate Concrete</option>
+            <option value="hsc">High-Strength Concrete (HSC)</option>
+            <option value="uhpc">Ultra-High Performance Concrete (UHPC)</option>
+            <option value="steel">Structural Steel</option>
+        </select>
+    </div>
+
+    <!-- Quantity Input -->
+    <div class="form-group">
+        <label id="quantity-label" for="quantity">Amount needed (in Cubic Meters - m³):</label>
+        <input type="number" id="quantity" min="0" placeholder="e.g., 50">
+    </div>
+
+    <!-- Transport Distance Input -->
+    <div class="form-group">
+        <label for="distance">Estimated Transportation Distance (in Kilometers - km):</label>
+        <input type="number" id="distance" min="0" placeholder="e.g., 25">
+    </div>
+
+    <button onclick="calculateEmissions()">Calculate Environmental Impact</button>
+
+    <!-- Output Display Area -->
+    <div id="results" class="results">
+        <h2>📊 Impact Assessment</h2>
+        <div class="result-item"><strong>Estimated Lifespan:</strong> <span id="out-lifespan"></span></div>
+        <div class="result-item"><strong>Relative Material Cost:</strong> <span id="out-cost"></span></div>
+        <div class="result-item"><strong>Total Embodied CO₂:</strong> <span id="out-co2"></span> kg</div>
+        <div class="result-item"><strong>Transportation CO₂:</strong> <span id="out-trans-co2"></span> kg</div>
+        <div class="result-item" style="color: #1b5e20; font-weight: bold; margin-top: 15px;">
+            🌲 <strong>Tree Equivalent:</strong> It would take <span id="out-trees"></span> mature trees a whole year to absorb this total amount of CO₂!
+        </div>
+    </div>
+
+    <!-- Sources & Disclaimer section -->
+    <div class="sources">
+        <strong>Disclaimer:</strong> This calculator provides rough, generalized educational estimations for student projects. Material traits vary widely based on regional supply chains and precise mix configurations.
+        <br><br>
+        <strong>Data Sources & Methodology References:</strong>
+        <ul>
+            <li>Embodied carbon values modeled from global industry averages (American Concrete Institute - ACI, Inventory of Carbon and Energy - ICE database).</li>
+            <li>Transportation emissions modeled at an average of 0.12 kg CO₂ per metric ton-kilometer (typical heavy freight vehicle).</li>
+            <li>Tree absorption metrics derived from the US Environmental Protection Agency (EPA) baseline of ~22 kg CO₂ absorbed per mature tree per year.</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // Automatically change input labels if user selects Steel (which uses tonnes instead of m³)
+    document.getElementById('material').addEventListener('change', function() {
+        const label = document.getElementById('quantity-label');
+        if (this.value === 'steel') {
+            label.textContent = "Amount needed (in Metric Tons):";
+        } else {
+            label.textContent = "Amount needed (in Cubic Meters - m³):";
+        }
+    });
+
+    function calculateEmissions() {
+        const material = document.getElementById('material').value;
+        const qty = parseFloat(document.getElementById('quantity').value) || 0;
+        const dist = parseFloat(document.getElementById('distance').value) || 0;
+
+        if (qty <= 0) {
+            alert("Please enter a valid amount greater than 0.");
+            return;
+        }
+
+        // Database coefficients
+        // Concrete weight approx: 2.4 metric tons per m3. Steel weight: 1 ton.
+        let co2PerUnit = 0; 
+        let lifespan = "";
+        let costIndicator = "";
+        let weightPerUnit = 2.4; // default for concrete in metric tons
+
+        if (material === "standard") {
+            co2PerUnit = 300; // kg CO2 per m3
+            lifespan = "50 – 100 Years";
+            costIndicator = "Baseline ($)";
+            weightPerUnit = 2.4;
+        } else if (material === "low_carbon") {
+            co2PerUnit = 180; 
+            lifespan = "60 – 100 Years";
+            costIndicator = "Slightly Higher ($$)";
+            weightPerUnit = 2.4;
+        } else if (material === "recycled") {
+            co2PerUnit = 250; 
+            lifespan = "40 – 80 Years";
+            costIndicator = "Variable ($-$$)";
+            weightPerUnit = 2.4;
+        } else if (material === "hsc") {
+            co2PerUnit = 400; 
+            lifespan = "80 – 120 Years";
+            costIndicator = "High ($$$)";
+            weightPerUnit = 2.4;
+        } else if (material === "uhpc") {
+            co2PerUnit = 900; 
+            lifespan = "100 – 150+ Years";
+            costIndicator = "Very High ($$$$$)";
+            weightPerUnit = 2.4;
+        } else if (material === "steel") {
+            co2PerUnit = 1800; // kg CO2 per Metric Ton
+            lifespan = "100+ Years (with maintenance)";
+            costIndicator = "High Premium ($$$$)";
+            weightPerUnit = 1.0; // Input is already in tons
+        }
+
+        // Calculations
+        const materialCo2 = co2PerUnit * qty;
+        const totalWeightTons = qty * weightPerUnit;
+        const transportCo2 = totalWeightTons * dist * 0.12; // 0.12 kg CO2 per ton-km
+        const totalCo2 = materialCo2 + transportCo2;
+        
+        // Tree absorption: 22 kg per tree per year
+        const treesRequired = totalCo2 / 22;
+
+        // Display results to user
+        document.getElementById('out-lifespan').textContent = lifespan;
+        document.getElementById('out-cost').textContent = costIndicator;
+        document.getElementById('out-co2').textContent = Math.round(materialCo2).toLocaleString();
+        document.getElementById('out-trans-co2').textContent = Math.round(transportCo2).toLocaleString();
+        document.getElementById('out-trees').textContent = Math.round(treesRequired).toLocaleString();
+
+        // Show the hidden results box
+        document.getElementById('results').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
